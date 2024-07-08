@@ -10,7 +10,7 @@ class Lock {
   }
 }
 
-export default class CacheService extends FileDbService {
+export default class FileDbCacheService extends FileDbService {
   constructor() {
     super()
     this.dbCache = {}

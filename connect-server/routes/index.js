@@ -1,5 +1,6 @@
 import Router from '../middlewares/router';
-import CacheService from '../services/FileDbCacheService';
+import FileDbCacheService from '../services/FileDbCacheService';
+import LikesService from '../services/LikesService';
 
 const router = Router();
 
@@ -12,7 +13,8 @@ const router = Router();
   })
 })
 
-const service = new CacheService();
+const service = new FileDbCacheService();
+const likesService = new LikesService();
 
 router.get('/file/:fileId', (req, res, next) => {
   service.resolveFile(req.params.fileId).then((info) => {
@@ -22,11 +24,12 @@ router.get('/file/:fileId', (req, res, next) => {
   })
 })
 
-router.get('/db/:dbName', (req, res, next) => {
-  service.readDb(req.params.dbName).then((info) => {
-    res.json(info);
+router.get('/likes', (req, res, next) => {
+  likesService.getLikes(req.query).then((list) => {
+    res.json(list);
   }).catch((err) => {
-    res.json(err);
+    debugger
+    res.error(200, err);
   })
 })
 
