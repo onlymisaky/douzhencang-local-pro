@@ -1,7 +1,7 @@
 import path from 'path'
 
-const root = path.resolve(process.cwd(), '../data');
-const dbPath = path.resolve(root, '.appdata');
+const root = path.resolve(process.cwd(), '../data')
+const dbPath = path.resolve(root, '.appdata')
 
 export const fileConfig = {
   likes: path.resolve(root, '点赞'),

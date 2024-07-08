@@ -1,5 +1,5 @@
 import Router from '../middlewares/router';
-import FileDbService from '../services/FileDbService';
+import CacheService from '../services/FileDbCacheService';
 
 const router = Router();
 
@@ -12,10 +12,10 @@ const router = Router();
   })
 })
 
-const fileDbService = new FileDbService();
+const service = new CacheService();
 
 router.get('/file/:fileId', (req, res, next) => {
-  fileDbService.resolveFile(req.params.fileId).then((info) => {
+  service.resolveFile(req.params.fileId).then((info) => {
     res.json(info);
   }).catch((err) => {
     res.json(err);
@@ -23,7 +23,7 @@ router.get('/file/:fileId', (req, res, next) => {
 })
 
 router.get('/db/:dbName', (req, res, next) => {
-  fileDbService.readDb(req.params.dbName).then((info) => {
+  service.readDb(req.params.dbName).then((info) => {
     res.json(info);
   }).catch((err) => {
     res.json(err);

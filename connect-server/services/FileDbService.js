@@ -30,8 +30,7 @@ export default class FileDbService {
   }
 
   /**
-   * @param {{'likes'|'authors'|'bookmarked'|'following'|'videos'|'videoDescriptions'}} dbName
-   * @returns 
+   * @param {'likes'|'authors'|'bookmarked'|'following'|'videos'|'videoDescriptions'} dbName 
    */
   readDb(dbName) {
     const { path, } = dbCofig[dbName] || {}
@@ -40,12 +39,10 @@ export default class FileDbService {
       return Promise.reject(isValid);
     }
 
-    let resolve = void 0;
-    let reject = void 0;
-    const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+    const { resolve, promise } = withResolvers()
 
     let data = '';
-    fs.createReadStream(path, { encoding: 'utf-8' })
+    const rs = fs.createReadStream(path, { encoding: 'utf-8' })
       .on('data', (chunk) => { data += chunk; })
       .on('end', () => {
         try {
@@ -56,12 +53,12 @@ export default class FileDbService {
       })
       .on('error', (err) => { reject(err); });
 
+    promise.stream = rs;
     return promise;
   }
 
   /**
-   * @param {{'likes'|'authors'|'bookmarked'|'following'|'videos'|'videoDescriptions'}} dbName
-   * @returns 
+   * @param {'likes'|'authors'|'bookmarked'|'following'|'videos'|'videoDescriptions'} dbName 
    */
   writeDb(dbName, data) {
     const { key, path } = dbCofig[dbName];
@@ -69,14 +66,26 @@ export default class FileDbService {
     if (isValid instanceof Error) {
       return Promise.reject(isValid);
     }
-    let resolve = void 0;
-    let reject = void 0;
-    const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+    const { resolve, reject, promise } = withResolvers()
+
+    if (data instanceof fs.ReadStream) {
+      let str = '';
+      const wr = fs.createWriteStream(path)
+        .on('pipe', (chunk) => {
+          str += chunk;
+        })
+        .on('finish', () => {
+          str = `window.${key}=String.raw` + `\`${str}\``
+        })
+        .pipe(data)
+      promise.stream = wr;
+      return promise;
+    }
 
     const str = `window.${key}=String.raw` + `\`${JSON.stringify(data, null, 0)}\``
     fs.writeFile(path, str, { encoding: 'utf-8' }, (err) => {
       if (err) reject(err);
-      else resolve();
+      else resolve(str);
     })
 
     return promise;
