@@ -46,16 +46,24 @@ async function processRes(res, method, body) {
 
 let promise = Promise.resolve();
 
-requestOptions.forEach(([options, optionsWithQueryString]) => {
-  promise = promise.then(() =>
-    Promise.allSettled([
-      fetch(options.url, options).then(res => processRes(res, options.method, options.body)),
-      fetch(optionsWithQueryString.url, optionsWithQueryString).then(res =>
-        processRes(res, optionsWithQueryString.method, optionsWithQueryString.body)
-      ),
-    ])
-  );
-});
+// requestOptions.forEach(([options, optionsWithQueryString]) => {
+//   promise = promise.then(() =>
+//     Promise.allSettled([
+//       fetch(options.url, options).then(res => processRes(res, options.method, options.body)),
+//       fetch(optionsWithQueryString.url, optionsWithQueryString).then(res =>
+//         processRes(res, optionsWithQueryString.method, optionsWithQueryString.body)
+//       ),
+//     ])
+//   );
+// });
+
+fetch('/api/file/7385471705264819456')
+  .then(res => res.json())
+  .then(res => console.log(res));
+
+fetch('/api/db/likes')
+  .then(res => res.json())
+  .then(res => console.log(res));
 </script>
 
 <template>
