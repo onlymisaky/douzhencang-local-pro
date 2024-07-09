@@ -1,19 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import { Readable } from 'stream'
 import { dbCofig, fileConfig } from '../configs/index'
+import { doThenAble, arrayToAsyncIterator, withResolvers } from '../utils/index'
 
-const regex = /window\.db\w*\s*=\s*String\.raw`([^`]*)`;/;
-
-const withResolvers = () => {
-  let resolve = void 0;
-  let reject = void 0;
-  const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
-  return {
-    promise,
-    resolve,
-    reject
-  }
-}
+const regex = /window\.db\w*\s*=\s*String\.raw`([^`]*)`(;?)/;
 
 export default class FileDbService {
   constructor() { }
@@ -39,11 +30,13 @@ export default class FileDbService {
       return Promise.reject(isValid);
     }
 
-    const { resolve, promise } = withResolvers()
+    let { resolve, reject, promise } = withResolvers()
 
     let data = '';
     const rs = fs.createReadStream(path, { encoding: 'utf-8' })
-      .on('data', (chunk) => { data += chunk; })
+      .on('data', (chunk) => {
+        data += chunk;
+      })
       .on('end', () => {
         try {
           resolve(JSON.parse(data.match(regex)[1]));
@@ -51,14 +44,20 @@ export default class FileDbService {
           reject(error)
         }
       })
-      .on('error', (err) => { reject(err); });
+      .on('error', (err) => {
+        doThenAble(err, resolve, reject);
+      });
 
-    promise.stream = rs;
+    promise.cancel = (ps) => {
+      data = null;
+      rs.destroy(ps);
+    };
     return promise;
   }
 
   /**
-   * @param {'likes'|'authors'|'bookmarked'|'following'|'videos'|'videoDescriptions'} dbName 
+   * @param {'likes'|'authors'|'bookmarked'|'following'|'videos'|'videoDescriptions'} dbName
+   * @param {{Record<string, any> | string}} data
    */
   writeDb(dbName, data) {
     const { key, path } = dbCofig[dbName];
@@ -68,25 +67,36 @@ export default class FileDbService {
     }
     const { resolve, reject, promise } = withResolvers()
 
-    if (data instanceof fs.ReadStream) {
-      let str = '';
-      const wr = fs.createWriteStream(path)
-        .on('pipe', (chunk) => {
-          str += chunk;
-        })
-        .on('finish', () => {
-          str = `window.${key}=String.raw` + `\`${str}\``
-        })
-        .pipe(data)
-      promise.stream = wr;
+    let str = '';
+    if (typeof data === 'string' && data.startsWith(`window.`)) {
+      str = data;
+    }
+    if (typeof data === 'object' && data !== null) {
+      str = `window.${key}=String.raw` + '`' + JSON.stringify(data, null, 0) + '`;';
+    }
+    if (!str.length) {
+      reject(new Error('Invalid data'));
       return promise;
     }
 
-    const str = `window.${key}=String.raw` + `\`${JSON.stringify(data, null, 0)}\``
-    fs.writeFile(path, str, { encoding: 'utf-8' }, (err) => {
-      if (err) reject(err);
-      else resolve(str);
-    })
+    const rs = Readable.from(arrayToAsyncIterator(str))
+    const ws = fs.createWriteStream(path, 'utf-8')
+      .on('finish', () => {
+        try {
+          resolve(JSON.parse(str.match(regex)[1]));
+        } catch (error) {
+          reject(error)
+        }
+      })
+      .on('error', (err) => {
+        doThenAble(err, resolve, reject);
+      })
+    rs.pipe(ws)
+
+    promise.cancel = (ps) => {
+      ws.destroy(ps);
+      rs.destroy();
+    }
 
     return promise;
   }

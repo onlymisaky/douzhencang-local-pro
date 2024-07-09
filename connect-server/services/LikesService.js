@@ -5,7 +5,10 @@ export default class LikesService extends FileDbCacheService {
     super()
   }
 
-  async getLikes(pagination) {
+  // TODO 这里也行该加缓存
+  // 所以当前的缓存设计的不好
+  // 这样想是不是过度设计了
+  async getLikes(pagination, searchParams) {
     const { likes } = await this.readDb('likes')
     const { disappeared, downloaded, masterList, numDisappeared, total } = likes;
     const { page, size } = { page: 1, size: 20, ...pagination };

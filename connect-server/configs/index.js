@@ -35,4 +35,8 @@ export const dbCofig = {
     path: path.resolve(dbPath, 'db_videos.js'),
     key: 'dbv',
   },
+  xxx: {
+    key: 'dbxxx',
+    path: path.resolve(dbPath, 'db_xxx.js'),
+  },
 }

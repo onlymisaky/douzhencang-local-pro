@@ -64,6 +64,8 @@ fetch('/api/file/7385471705264819456')
 fetch('/api/likes?size=800')
   .then(res => res.json())
   .then(res => console.log(res));
+
+fetch('/api/read-write-test');
 </script>
 
 <template>

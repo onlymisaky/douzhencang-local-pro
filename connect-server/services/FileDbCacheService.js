@@ -1,6 +1,5 @@
 import FileDbService from './FileDbService'
 
-
 class Lock {
   // 不区分读写锁任务函数
   // 读写返回相同的数据
@@ -43,35 +42,25 @@ export default class FileDbCacheService extends FileDbService {
 
   // TODO 增量更新
   writeDb(dbName, data) {
-    const cache = this.dbCache[dbName]
-
+    let cache = this.dbCache[dbName]
     if (!cache || !(cache instanceof Lock)) {
-      let lock = new Lock('write');
-      this.dbCache[dbName] = lock
-      lock.task = super.writeDb(dbName, data)
-      return lock.task.then((str) => {
-        this.dbCache[dbName] = data
-        lock = null
-        return str
-      })
-    }
-
-    // TODO 待测试
-    if (cache.type === 'read') {
+      this.dbCache[dbName] = new Lock('write');
+      this.dbCache[dbName].task = super.writeDb(dbName, data)
+      cache = this.dbCache[dbName]
+    } else if (cache.type === 'read') {
+      let ps = super.writeDb(dbName, data)
+      cache.task.cancel(ps, data)
       cache.type = 'write'
-      cache.task = super.writeDb(dbName, data)
+      cache.task = ps
+    } else if (cache.type === 'write') {
+      let ps = super.writeDb(dbName, data)
+      cache.task.cancel(ps, data)
+      cache.task = ps
     }
-    if (cache.type === 'write') {
-      cache.task = cache.task.then((str) => {
-        console.log('上一次写完了，开始本次正式写入');
-        return super.writeDb(dbName, data)
-      })
-    }
-    return cache.task.then((str) => {
-      this.dbCache[dbName] = data
-      return str
+    return cache.task.then((res) => {
+      this.dbCache[dbName] = res
+      return res
     })
-
   }
 
   resolveFile(fileId) {
