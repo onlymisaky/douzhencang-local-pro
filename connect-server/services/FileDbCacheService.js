@@ -4,9 +4,6 @@ class Lock {
   // 不区分读写锁任务函数
   // 读写返回相同的数据
   task = Promise.resolve()
-  constructor(type = 'read') {
-    this.type = type
-  }
 }
 
 export default class FileDbCacheService extends FileDbService {
@@ -44,17 +41,12 @@ export default class FileDbCacheService extends FileDbService {
   writeDb(dbName, data) {
     let cache = this.dbCache[dbName]
     if (!cache || !(cache instanceof Lock)) {
-      this.dbCache[dbName] = new Lock('write');
+      this.dbCache[dbName] = new Lock();
       this.dbCache[dbName].task = super.writeDb(dbName, data)
       cache = this.dbCache[dbName]
-    } else if (cache.type === 'read') {
+    } else if (cache instanceof Lock) {
       let ps = super.writeDb(dbName, data)
-      cache.task.cancel(ps, data)
-      cache.type = 'write'
-      cache.task = ps
-    } else if (cache.type === 'write') {
-      let ps = super.writeDb(dbName, data)
-      cache.task.cancel(ps, data)
+      cache.task.cancel(ps)
       cache.task = ps
     }
     return cache.task.then((res) => {
