@@ -7,6 +7,17 @@ import { doThenable, arrayToAsyncIterator, withResolvers } from '../utils/index'
 const regex = /window\.db\w*\s*=\s*String\.raw`([^`]*)`(;?)/;
 
 export default class FileDbService {
+
+  /** @type {FileDbService} */
+  static instance = null
+
+  static getInstance() {
+    if (!this.instance) {
+      this.instance = new FileDbService()
+    }
+    return this.instance
+  }
+
   constructor() { }
 
   exists(path) {

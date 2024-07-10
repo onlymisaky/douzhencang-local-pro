@@ -70,4 +70,5 @@ fetch('/api/read-write-test');
 
 <template>
   <div>douzhencang-local-pro</div>
+  <video style="display: block; height: 800px" :src="'/static/7172556035125792037.mp4'" autoplay controls />
 </template>

@@ -7,6 +7,17 @@ class Lock {
 }
 
 export default class FileDbCacheService extends FileDbService {
+
+  /** @type {FileDbCacheService} */
+  static instance = null
+
+  static getInstance() {
+    if (!this.instance) {
+      this.instance = new FileDbCacheService()
+    }
+    return this.instance
+  }
+
   constructor() {
     super()
     this.dbCache = {}
