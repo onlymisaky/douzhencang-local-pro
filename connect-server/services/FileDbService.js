@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { Readable } from 'stream'
 import { dbCofig, fileConfig } from '../configs/index'
-import { doThenAble, arrayToAsyncIterator, withResolvers } from '../utils/index'
+import { doThenable, arrayToAsyncIterator, withResolvers } from '../utils/index'
 
 const regex = /window\.db\w*\s*=\s*String\.raw`([^`]*)`(;?)/;
 
@@ -30,7 +30,7 @@ export default class FileDbService {
       return Promise.reject(isValid);
     }
 
-    let { resolve, reject, promise } = withResolvers()
+    const { resolve, reject, promise } = withResolvers()
 
     let data = '';
     const rs = fs.createReadStream(path, { encoding: 'utf-8' })
@@ -45,12 +45,12 @@ export default class FileDbService {
         }
       })
       .on('error', (err) => {
-        doThenAble(err, resolve, reject);
+        doThenable(err, resolve, reject);
       });
 
-    promise.cancel = (ps) => {
+    promise.cancel = (thenable) => {
       data = null;
-      rs.destroy(ps);
+      rs.destroy(thenable);
     };
     return promise;
   }
@@ -89,12 +89,12 @@ export default class FileDbService {
         }
       })
       .on('error', (err) => {
-        doThenAble(err, resolve, reject);
+        doThenable(err, resolve, reject);
       })
     rs.pipe(ws)
 
-    promise.cancel = (ps) => {
-      ws.destroy(ps);
+    promise.cancel = (thenable) => {
+      ws.destroy(thenable);
       rs.destroy();
     }
 

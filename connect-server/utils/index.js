@@ -9,12 +9,12 @@ export const withResolvers = () => {
   }
 }
 
-export const doThenAble = (thenAble, resolve, reject) => {
+export const doThenable = (thenAble, resolve, reject) => {
   if (thenAble && typeof thenAble.then === 'function' && typeof thenAble.catch === 'function') {
     return thenAble.then((res) => {
-      return doThenAble(res, resolve, reject);
+      return doThenable(res, resolve, reject);
     }).catch((err) => {
-      reject(err);
+      return doThenable(err, resolve, reject)
     })
   }
   typeof thenAble instanceof Error ? reject(thenAble) : resolve(thenAble);

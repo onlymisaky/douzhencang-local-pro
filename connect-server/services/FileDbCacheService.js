@@ -3,7 +3,7 @@ import FileDbService from './FileDbService'
 class Lock {
   // 不区分读写锁任务函数
   // 读写返回相同的数据
-  task = Promise.resolve()
+  runningTask = Promise.resolve()
 }
 
 export default class FileDbCacheService extends FileDbService {
@@ -25,12 +25,12 @@ export default class FileDbCacheService extends FileDbService {
     let lock = new Lock();
     if (!cache) {
       this.dbCache[dbName] = lock
-      lock.task = super.readDb(dbName)
+      lock.runningTask = super.readDb(dbName)
     }
     if (cache instanceof Lock) {
       lock = cache
     }
-    return lock.task.then((res) => {
+    return lock.runningTask.then((res) => {
       this.dbCache[dbName] = res
       lock = null
       return res
@@ -42,14 +42,14 @@ export default class FileDbCacheService extends FileDbService {
     let cache = this.dbCache[dbName]
     if (!cache || !(cache instanceof Lock)) {
       this.dbCache[dbName] = new Lock();
-      this.dbCache[dbName].task = super.writeDb(dbName, data)
+      this.dbCache[dbName].runningTask = super.writeDb(dbName, data)
       cache = this.dbCache[dbName]
     } else if (cache instanceof Lock) {
-      let ps = super.writeDb(dbName, data)
-      cache.task.cancel(ps)
-      cache.task = ps
+      let thenable = super.writeDb(dbName, data)
+      cache.runningTask.cancel(thenable)
+      cache.runningTask = thenable
     }
-    return cache.task.then((res) => {
+    return cache.runningTask.then((res) => {
       this.dbCache[dbName] = res
       return res
     })
@@ -64,12 +64,12 @@ export default class FileDbCacheService extends FileDbService {
     let lock = new Lock();
     if (!cache) {
       this.fileCache[fileId] = lock
-      lock.task = super.resolveFile(fileId)
+      lock.runningTask = super.resolveFile(fileId)
     }
     if (cache instanceof Lock) {
       lock = cache
     }
-    return lock.task.then((res) => {
+    return lock.runningTask.then((res) => {
       this.fileCache[fileId] = res
       lock = null
       return res
