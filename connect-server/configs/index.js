@@ -3,7 +3,7 @@ import path from 'path'
 const root = path.resolve(process.cwd(), '../data')
 const dbPath = path.resolve(root, '.appdata')
 
-export const fileConfig = {
+export const filePathConfig = {
   likes: path.resolve(root, '点赞'),
   bookmarked: path.resolve(root, '收藏'),
   following: path.resolve(root, '关注'),

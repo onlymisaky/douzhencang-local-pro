@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Readable } from 'stream'
-import { dbCofig, fileConfig } from '../configs/index'
+import { dbCofig, filePathConfig } from '../configs/index'
 import { doThenable, arrayToAsyncIterator, withResolvers } from '../utils/index'
 
 const regex = /window\.db\w*\s*=\s*String\.raw`([^`]*)`(;?)/;
@@ -112,64 +112,90 @@ export default class FileDbService {
     return promise;
   }
 
-  resolveFile(fileId) {
-    const map = {
-      cover: { path: '封面', extension: 'jpg' },
-      video: { path: '视频', extension: 'mp4' }
-    }
-
+  /**
+   * @param {string} fileId 
+   * @param {string} fileSource 
+   */
+  getFileInfoBySourcePath(fileId, sourcePath) {
     const data = {
-      likes: { cover: '', video: '' },
-      bookmarked: { cover: '', video: '' },
+      cover: { fullPath: path.resolve(sourcePath, '封面', `${fileId}.jpg`), },
+      video: { fullPath: path.resolve(sourcePath, '视频', `${fileId}.mp4`), },
     }
+    const { resolve, promise } = withResolvers()
+    let count = 0;
 
-    Object.keys(data).forEach((category) => {
-      Object.keys(map).forEach((fileType) => {
-        const filePath = path.resolve(fileConfig[category], map[fileType].path, `${fileId}.${map[fileType].extension}`);
-        if (fs.existsSync(filePath)) {
-          data[category][fileType] = filePath;
+    Object.keys(data).forEach((fileType) => {
+      const fileInfo = data[fileType];
+      const { fullPath } = fileInfo
+      fs.stat(fullPath, (err, stats) => {
+        count++;
+        if (err) fileInfo.error = err;
+        else {
+          if (!stats.isFile()) {
+            fileInfo.error = 'not file';
+          } else {
+            Object.keys(stats).forEach((key) => {
+              if (typeof stats[key] !== 'function') {
+                fileInfo[key] = stats[key];
+              }
+            })
+          }
+        }
+        if (count === 2) {
+          resolve(data)
         }
       })
     })
 
-    const { resolve, promise } = withResolvers()
-    const following = {}
+    return promise
+  }
 
-    fs.readdir(fileConfig.following, (err, files) => {
-      if (err) {
+  getFileInfoFromFollowing(fileId) {
+    const data = {}
+    const { resolve, promise } = withResolvers()
+    const followingPath = filePathConfig.following
+    fs.stat(followingPath, (err, dirStats) => {
+      if (err || !dirStats.isDirectory()) {
         resolve(data);
         return;
-      };
-      let fileCount = 0;
-      for (const authorId of files) {
-        let filePath = path.resolve(fileConfig.following, authorId);
-        fs.stat(filePath, (err, stat) => {
-          if (err) {
-            error
-            fileCount++;
-          } else {
-            if (stat.isDirectory()) {
-              const fileTypes = Object.keys(map);
-              for (const fileType of fileTypes) {
-                const fullPath = path.resolve(filePath, map[fileType].path, `${fileId}.${map[fileType].extension}`);
-                if (fs.existsSync(fullPath)) {
-                  if (!following[authorId]) {
-                    following[authorId] = {}
-                  }
-                  following[authorId][fileType] = fullPath;
-                }
+      }
+      fs.readdir(followingPath, (err, authorIds) => {
+        if (err || authorIds.length === 0) {
+          resolve(data);
+          return;
+        }
+        let len = authorIds.length
+        authorIds.forEach((authorId) => {
+          this.getFileInfoBySourcePath(fileId, path.resolve(followingPath, authorId))
+            .then((fileInfo) => {
+              len--;
+              if (!fileInfo.video.error && !fileInfo.cover.error) {
+                data[authorId] = fileInfo;
+                len = 0
               }
-            }
-            fileCount++;
-          }
-          if (fileCount === files.length) {
-            resolve({ ...data, following });
-          }
+              if (len === 0) {
+                resolve(data);
+              }
+            })
         })
+      })
+    })
+    return promise;
+  }
+
+  resolveFile(fileId) {
+    return Promise.all([
+      this.getFileInfoBySourcePath(fileId, filePathConfig.likes),
+      this.getFileInfoBySourcePath(fileId, filePathConfig.bookmarked),
+      this.getFileInfoFromFollowing(fileId)
+    ]).then(([likes, bookmarked, following]) => {
+      return {
+        likes,
+        bookmarked,
+        following
       }
     })
 
-    return promise;
   }
 
   /**
