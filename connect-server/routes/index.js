@@ -1,73 +1,82 @@
 import Router from '../middlewares/router';
-import FileDbCacheService from '../services/FileDbCacheService';
-import LikesService from '../services/LikesService';
+import Service from '../services/Service';
 
 const router = Router();
+const service = Service.getInstance();
 
-['get', 'post', 'put', 'delete', 'patch'].forEach(method => {
-  ['/test', '/test/:id', '/test/:id/:name'].forEach(path => {
-    router[method](path, (req, res, next) => {
-      const { query, params, method, body } = req;
-      res.json({ method, query, params, body });
+/**
+ * 获取 视频列表（点赞 / 收藏）
+ */
+router.get('/videos/:sourceName', (req, res, next) => {
+  const { sourceName } = req.params;
+  if (['likes', 'bookmarked'].includes(sourceName)) {
+    return service.getVideoList(sourceName, req.query, req.body).then((data) => {
+      res.json(data)
+    }).catch((err) => {
+      res.json({ error: err })
     })
-  })
+  }
+  res.json({ list: [] })
 })
 
-const service = new FileDbCacheService();
-const likesService = new LikesService();
-
-router.get('/file/:fileId', (req, res, next) => {
-  service.resolveFile(req.params.fileId).then((info) => {
-    res.json(info);
+/**
+ * 获取 视频详情
+ */
+router.get('/video/:videoId', (req, res, next) => {
+  const { videoId } = req.params;
+  return service.getVideoDetail(videoId).then((data) => {
+    res.json(data)
   }).catch((err) => {
-    res.json(err);
+    res.json({ error: err })
   })
 })
 
-router.get('/read-write-test', (req, res, next) => {
-  service.readDb('xxx').then((result) => {
-    console.log('readDb - 1', result);
-    res.json({
-      '__mode': 'readDb - 1',
-      ...result
-    })
-  })
-
-  service.readDb('xxx').then((result) => {
-    console.log('readDb - 2', result);
-  })
-
-  service.writeDb('xxx', { name: Date.now() }).then((result) => {
-    console.log('writeDb - name', result);
-  })
-
-  service.writeDb('xxx', { age: Date.now() }).then((result) => {
-    console.log('writeDb - age', result);
-  })
-
-  service.readDb('xxx').then((result) => {
-    console.log('readDb - 3', result);
-  })
-
-  service.writeDb('xxx', { sex: Date.now() }).then((result) => {
-    console.log('writeDb - sex', result);
-  })
-
-  service.writeDb('xxx', { xxx: Date.now() }).then((result) => {
-    console.log('writeDb - xxx', result);
-
-  })
-
-  service.writeDb('xxx', { yyy: Date.now() }).then((result) => {
-    console.log('writeDb - yyy', result);
-  })
+/**
+ * TODO
+ * 删除 点赞 / 收藏 
+ * data: ['likes', 'bookmarked', 'following'] -- 从数据中删除，意味着下次可能还会重新下载
+ * file: 
+ */
+router.delete('/video/:videoId', (req, res, next) => {
+  next()
 })
 
-router.get('/likes', (req, res, next) => {
-  likesService.getLikes(req.query).then((list) => {
-    res.json(list);
+
+/**
+ * TODO
+ * 移动文件
+ */
+router.post('/move/:fileId', (req, res, next) => {
+  next()
+})
+
+/**
+ * TODO
+ * 修剪文件，最终只保留一份
+ */
+router.post('/fix/:fileId', (req, res, next) => {
+  next()
+})
+
+/**
+ * 获取 作者列表（关注的+下载过的）
+ */
+router.get('/authors', (req, res, next) => {
+  service.getAuthorList(req.query, req.body).then((data) => {
+    res.json(data)
   }).catch((err) => {
-    res.error(200, err);
+    res.json({ error: err })
+  })
+})
+
+/**
+ * 获取 作者视频 (已下载的)
+ */
+router.get('/author/:authorId/videos', (req, res, next) => {
+  service.getAuthorVideos(req.params.authorId, req.query, req.body).then((data) => {
+    res.json(data)
+  }).catch((err) => {
+    res.json({ error: err })
   })
 })
 
