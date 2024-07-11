@@ -82,7 +82,6 @@ export default class Service extends FileDbCacheService {
     }
   }
 
-
   async getVideoDetail(videoId) {
     const videos = await super.readDb('videos');
     if (!videos[videoId]) {
@@ -99,7 +98,7 @@ export default class Service extends FileDbCacheService {
     const { page, size } = { page: 1, size: 20, ...pagination };
     const list = []
     for (const authorId in authors) {
-      list.push(_this._createAuthorModel(authorId, authors))
+      list.push(this._createAuthorModel(authorId, authors))
     }
     const total = list.length;
 

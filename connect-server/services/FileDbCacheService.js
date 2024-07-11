@@ -48,7 +48,12 @@ export default class FileDbCacheService extends FileDbService {
     })
   }
 
-  // TODO 增量更新
+
+  /**
+   * TODO 增量更新
+   * @param {'likes'|'authors'|'bookmarked'|'following'|'videos'|'videoDescriptions'} dbName
+   * @param {{Record<string, any> | string}} data
+   */
   writeDb(dbName, data) {
     let cache = this.dbCache[dbName]
     if (!cache || !(cache instanceof Lock)) {
