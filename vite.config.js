@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
+import react from '@vitejs/plugin-react-swc'
 import serverPlugin from './vite-plugins/vite-server-plugin';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue(), serverPlugin()],
+  plugins: [react(), serverPlugin()],
 });
